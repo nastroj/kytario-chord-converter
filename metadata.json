@@ -1,0 +1,6 @@
+{
+  "name": "Kytario Chord Converter",
+  "description": "Kytario Chord Converter - Universal chord format converter and key transposer for Kytario.com, Ultimate-Guitar, and ChordPro formats.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
