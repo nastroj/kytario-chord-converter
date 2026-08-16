@@ -1179,6 +1179,57 @@ export function cleanInputText(text: string): string {
 }
 
 /**
+ * Normalize and format input text for the editor.
+ * Options: { convertAngloToEuropean?: boolean, minorFormat?: "m"|"mi" }
+ */
+export function formatInputText(text: string, options?: { convertAngloToEuropean?: boolean; minorFormat?: "m" | "mi" }): string {
+  if (!text) return "";
+  const cleaned = cleanInputText(text);
+  const lines = cleaned.split("\n");
+  const out: string[] = [];
+
+  for (let rawLine of lines) {
+    let line = rawLine;
+
+    // Normalize explicit chord braces first
+    line = line.replace(/\{([^\}]+)\}/g, (match, p1) => {
+      if (!p1) return match;
+      if (p1.toUpperCase().trim() === "X") return match;
+      if (p1.includes(" ")) {
+        const parts = p1.split(/\s+/).map(p => isChord(p) ? normalizeChordName(p, options as any) : p);
+        return `{${parts.join(" ")}}`;
+      }
+      return `{${normalizeChordName(p1, options as any)}}`;
+    });
+
+    // Normalize square brackets/chord markers to braces when they contain chords
+    line = line.replace(/\[([^\]]+)\]/g, (match, p1) => {
+      if (isChord(p1)) return `{${normalizeChordName(p1, options as any)}}`;
+      return match;
+    });
+
+    // Normalize parentheses when likely chords
+    line = line.replace(/\(([^)]+)\)/g, (match, p1) => {
+      if (isChord(p1)) return `{${normalizeChordName(p1, options as any)}}`;
+      return match;
+    });
+
+    // If the line is a pure chord line, normalize each chord token
+    if (isChordLine(line)) {
+      const tokens = line.split(/\s+/).map(tok => {
+        if (isChord(tok)) return `{${normalizeChordName(tok, options as any)}}`;
+        return tok;
+      });
+      out.push(tokens.join(" ").trim());
+    } else {
+      out.push(collapseLyricSpaces(line));
+    }
+  }
+
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+/**
  * Intelligently collapses redundant whitespace in a line:
  * - Collapses 2+ consecutive spaces in lyric/text portions to 1 space.
  * - Preserves spacing in chord-only lines (e.g. "{C#m}     {C#m/E}" or "|: {Am}   {F} :|").
